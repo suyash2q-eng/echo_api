@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EchoMind TTS & STT</title>
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
+
+<style>
+:root { 
+    --bg-page: #FDFBFF;
+    --bg-card: #FFFFFF;
+    --text-primary: #1F1F1F;
+    --text-secondary: #75797D;
+    --muted: #A0A0A0;
+    --border: #E5E7EB; 
+    --accent: #977BB7;
+    --accent-hover: #BBA9D6;
+    --input-bg: #FFFFFF;
+    --sidebar-bg: #FDFBFF;
+    --overlay-bg: rgba(253, 251, 255, 0.8);
+    --intro-bg: #FDFBFF;
+    --btn-text: #FFFFFF;
+    --modal-overlay: rgba(31,31,31,0.6);
+}
+
+.dark {
+    --bg-page: #1F1F1F;
+    --bg-card: #2A2A2A;
+    --text-primary: #ECECEC;
+    --text-secondary: #A0A0A0;
+    --muted: #75797D;
+    --border: #333333; 
+    --accent: #977BB7;
+    --accent-hover: #BBA9D6;
+    --input-bg: #242424;
+    --sidebar-bg: #181818;
+    --overlay-bg: rgba(31, 31, 31, 0.8);
+    --intro-bg: #111111;
+    --btn-text: #1F1F1F;
+    --modal-overlay: rgba(0, 0, 0, 0.7);
+}
+
+body { 
+    font-family: 'Inter', sans-serif; 
+    background: var(--bg-page); 
+    color: var(--text-primary); 
+    margin: 0; 
+    min-height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Intro Animation */
+#intro-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--intro-bg);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+}
+#intro-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+.intro-logo {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.04em;
+    animation: pulseIntro 2s infinite alternate;
+}
+@keyframes pulseIntro {
+    from { transform: scale(1); opacity: 0.8; }
+    to { transform: scale(1.05); opacity: 1; }
+}
+
+/* Layout */
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+.main-workspace {
+    flex: 1;
+    padding: 3rem;
+    overflow-y: auto;
+    background: var(--bg-page);
+    transition: background-color 0.3s;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-card); 
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border); 
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--muted); 
+}
+
+.sidebar {
+    width: 80px;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 0;
+    background: var(--sidebar-bg);
+    gap: 1.5rem;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.side-nav-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+    color: var(--text-secondary); 
+    position: relative;
+}
+.side-nav-btn:hover {
+    background: rgba(151, 123, 183, 0.1);
+    color: var(--accent-hover);
+}
+.side-nav-btn.active {
+    background: var(--accent);
+    color: var(--btn-text);
+    box-shadow: 0 0 20px rgba(151, 123, 183, 0.3);
+}
+.side-nav-btn .tooltip {
+    position: absolute;
+    right: 70px;
+    background: var(--accent);
+    color: var(--btn-text);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.2s;
+    white-space: nowrap;
+    z-index: 50;
+}
+.side-nav-btn:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+    right: 60px;
+}
+
+.header { 
+    padding: 1rem 2.5rem; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-bottom: 1px solid var(--border); 
+    background: var(--overlay-bg); 
+    backdrop-filter: blur(12px);
+    z-index: 10; 
+    transition: background-color 0.3s, border-color 0.3s;
+}
+.logo-text { font-size: 1.5rem; font-weight: 800; }
+
+.about-panel {
+    display: none;
+    position: fixed;
+    top: 80px;
+    right: 3rem;
+    width: 90%;
+    max-width: 650px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 3rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    z-index: 100;
+    text-align: center;
+    animation: slideDown 0.3s ease-out;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards */
+.tool-card { 
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2.5rem;
+    background: var(--bg-card);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    animation: fadeIn 0.5s ease-out;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+textarea, select { 
+    width: 100%; 
+    padding: 1rem 1.25rem; 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    background-color: var(--input-bg) !important; 
+    color: var(--text-primary) !important;
+    margin-bottom: 1.5rem; 
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+/* Buttons */
+.primary-btn { 
+    background: var(--accent); 
+    color: var(--btn-text); 
+    width: 100%; 
+    padding: 1.125rem; 
+    border-radius: 12px; 
+    font-weight: 700; 
+    font-size: 1rem;
+    display: flex; gap: 0.75rem;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.primary-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.primary-btn:disabled { opacity: 0.7; transform: none; cursor: default; }
+
+.secondary-btn { 
+    background: rgba(151, 123, 183, 0.05); 
+    color: var(--text-primary); 
+    width: 100%; 
+    padding: 1rem; 
+    border-radius: 12px;
+    border: 1px solid var(--border); 
+    cursor: pointer;
+    display: flex; gap: 0.75rem;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.secondary-btn:hover { background: rgba(151, 123, 183, 0.1); border-color: var(--accent); }
+
+/* Modal */
+.modal-overlay { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: var(--modal-overlay); 
+    backdrop-filter: blur(8px);
+    z-index: 200; 
+    justify-content: center; 
+    align-items: center; 
+}
+.modal-content { 
+    background: var(--bg-card); 
+    padding: 2.5rem; 
+    border-radius: 20px; 
+    width: 90%; 
+    max-width: 450px;
+    border: 1px solid var(--border);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+.login-header-btn {
+    background: var(--accent); 
+    color: var(--btn-text); 
+    padding: 0.5rem 1.5rem; 
+    border-radius: 0.5rem; 
+    font-size: 0.875rem; 
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.login-header-btn:hover { background: var(--accent-hover); }
+
+.about-btn {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.about-btn:hover { color: var(--text-primary); }
+
+.google-btn {
+    width: 100%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 0.75rem; 
+    background: var(--input-bg); 
+    border: 1px solid var(--border); 
+    color: var(--text-primary); 
+    padding: 0.875rem; 
+    border-radius: 0.75rem; 
+    margin-bottom: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.google-btn:hover { background: rgba(151,123,183,0.05); }
+
+</style>
+</head>
+
+<body>
+
+<!-- Intro -->
+<div id="intro-overlay">
+    <div class="intro-logo">EchoMind</div>
+</div>
+
+<div class="app-container">
+
+<div class="flex-1 flex flex-col overflow-hidden">
+
+<header class="header">
+    <div class="logo-text">EchoMind</div>
+
+    <div class="flex items-center gap-4">
+        <button class="about-btn" onclick="toggleAboutPanel()">About</button>
+        <button class="login-header-btn" onclick="openModal('login-modal')" id="header-login-btn">Login</button>
+    </div>
+</header>
+
+<div class="main-workspace">
+
+<!-- TTS Panel -->
+<div class="tool-card" id="tts-panel">
+<h1 class="text-3xl font-bold mb-8">Text to Speech</h1>
+
+<label class="block text-xs font-bold mb-2 uppercase tracking-widest text-[#75797D]">Voice Personality</label>
+<select id="voice-select">
+    <option value="en-US-AriaNeural" data-lang="en">Aria (English US - Female)</option>
+    <option value="en-US-GuyNeural" data-lang="en">Guy (English US - Male)</option>
+    <option value="hi-IN-SwaraNeural" data-lang="hi">Swara (Hindi - Female)</option>
+    <option value="ja-JP-NanamiNeural" data-lang="ja">Nanami (Japanese - Female)</option>
+    <option value="es-ES-AlvaroNeural" data-lang="es">Alvaro (Spanish - Male)</option>
+    <option value="fr-FR-DeniseNeural" data-lang="fr">Denise (French - Female)</option>
+</select>
+
+<label class="block text-xs font-bold mb-2 uppercase tracking-widest text-[#75797D]">Input Text</label>
+<textarea id="tts-text" placeholder="What should I say?" rows="8"></textarea>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <button class="primary-btn w-full col-span-1 sm:col-span-2" id="generate-btn" onclick="speakText()">
+        <i class="fas fa-play"></i> Generate Voice
+    </button>
+    <button class="secondary-btn w-full col-span-1 sm:col-span-2" id="download-btn" onclick="downloadAudio()" style="display:none">
+        <i class="fas fa-download"></i> Download .wav
+    </button>
+</div>
+</div>
+
+<!-- STT Panel -->
+<div class="tool-card" id="stt-panel" style="display:none">
+<h1 class="text-3xl font-bold mb-8">Speech to Text</h1>
+
+<label class="block text-xs font-bold mb-2 uppercase tracking-widest text-[#75797D]">Language Recognition</label>
+<select id="stt-lang-select">
+    <option value="en">English</option>
+    <option value="hi">Hindi</option>
+    <option value="es">Spanish</option>
+    <option value="fr">French</option>
+    <option value="ja">Japanese</option>
+</select>
+
+<div class="border-2 border-dashed rounded-2xl p-12 text-center mb-6 cursor-pointer" id="mic-trigger" onclick="toggleSTT()" style="border-color: var(--border);">
+    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto shadow-sm mb-4" style="background: var(--input-bg); border: 1px solid var(--border);">
+        <i class="fas fa-microphone text-2xl" id="mic-icon" style="color: var(--muted);"></i>
+    </div>
+    <p class="text-sm font-semibold" id="stt-status" style="color: var(--muted);">Click to start listening</p>
+</div>
+
+<label class="block text-xs font-bold mb-2 uppercase tracking-widest text-[#75797D]">Live Transcript</label>
+<textarea id="stt-result-text" placeholder="Your voice will appear here..." readonly rows="8"></textarea>
+
+<button class="secondary-btn w-full" id="copy-stt-btn" onclick="copySTT()">
+    <i class="far fa-copy"></i> Copy to Clipboard
+</button>
+</div>
+
+</div>
+</div>
+
+<aside class="sidebar">
+<div class="side-nav-btn active" id="btn-tts" onclick="switchTab('tts')">
+    <i class="fas fa-keyboard text-xl"></i>
+    <span class="tooltip">Text to Speech</span>
+</div>
+
+<div class="side-nav-btn" id="btn-stt" onclick="switchTab('stt')">
+    <i class="fas fa-microphone text-xl"></i>
+    <span class="tooltip">Speech to Text</span>
+</div>
+
+<div class="mt-auto flex flex-col gap-4 items-center">
+    <!-- Theme Toggle -->
+    <div class="side-nav-btn" id="btn-theme" onclick="toggleTheme()">
+        <i class="fas fa-moon text-xl" id="theme-icon"></i>
+        <span class="tooltip">Toggle Theme</span>
+    </div>
+
+    <div style="height: 1px; width: 32px; background: var(--border);"></div>
+
+    <!-- GitHub Link -->
+    <a class="side-nav-btn" href="https://github.com/suyash2q-eng" target="_blank">
+        <i class="fab fa-github text-xl"></i>
+        <span class="tooltip">GitHub</span>
+    </a>
+</div>
+</aside>
+
+</div>
+
+<!-- About Panel -->
+<div class="about-panel" id="about-panel">
+    <h2 class="text-4xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Meet the Minds</h2>
+    <p class="text-xl mb-8" style="color: var(--text-secondary);">
+        Developed by: <strong style="color: var(--text-primary); font-weight: 700;">Rishit K, Atharva K, Naveen and Suyash P</strong>
+    </p>
+    <p class="text-[1.1rem] leading-relaxed" style="color: var(--text-secondary);">
+        Our goal is to make voice technology easy and accessible. With accurate Speech-to-Text conversion and natural-sounding Text-to-Speech, we’ve built a platform that helps students, creators, and everyday users interact with EchoMind more smoothly.
+    </p>
+</div>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="login-modal">
+<div class="modal-content text-center">
+    <div class="mb-6 flex justify-center">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold" style="background: var(--accent); color: var(--btn-text);">E</div>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-2">Welcome Back</h2>
+    <p class="text-sm mb-8" style="color: var(--text-secondary);">Sign in to sync your preferences.</p>
+
+    <button id="google-login-btn" class="google-btn">
+        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+    </button>
+
+    <button class="text-sm" style="color: var(--text-secondary); background: none; border: none; cursor: pointer;" onclick="closeModal('login-modal')">Dismiss</button>
+</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    
+    // We dynamically load the user Firebase credentials.
+    const firebaseConfig = { 
+        apiKey: "AIzaSyC2TcF43M-GMLra_CMVr_fY7ZKv7fvkykM", 
+        authDomain: "tts-suy.firebaseapp.com", 
+        projectId: "tts-suy", 
+        storageBucket: "tts-suy.firebasestorage.app", 
+        messagingSenderId: "34904240374", 
+        appId: "1:34904240374:web:7d6698affc7ecbb003bcd7" 
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    document.getElementById('google-login-btn').onclick = async () => { 
+        try { 
+            await signInWithPopup(auth, provider); 
+            closeModal('login-modal'); 
+        } catch (e) { 
+            console.error("Firebase Auth Error", e);
+        } 
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        const btn = document.getElementById('header-login-btn');
+        if (user) { 
+            btn.innerHTML = `Logout (${user.displayName.split(' ')[0]})`; 
+            btn.onclick = () => signOut(auth); 
+        } else { 
+            btn.innerHTML = 'Login'; 
+            btn.onclick = () => openModal('login-modal'); 
+        }
+    });
+
+</script>
+
+<script>
+window.addEventListener("load", () => {
+    // Check local storage for theme preference
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark');
+        document.getElementById('theme-icon').classList.replace('fa-moon', 'fa-sun');
+    }
+    setTimeout(() => {
+        document.getElementById("intro-overlay").classList.add("hidden");
+    }, 1500);
+});
+
+function openModal(id) { document.getElementById(id).style.display = "flex"; }
+function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+function toggleAboutPanel() {
+    const panel = document.getElementById('about-panel');
+    panel.style.display = (panel.style.display === "block") ? "none" : "block";
+}
+
+function switchTab(tab) {
+    const isTTS = tab === "tts";
+    document.getElementById("tts-panel").style.display = isTTS ? "block" : "none";
+    document.getElementById("stt-panel").style.display = isTTS ? "none" : "block";
+    document.getElementById("btn-tts").classList.toggle("active", isTTS);
+    document.getElementById("btn-stt").classList.toggle("active", !isTTS);
+}
+
+function toggleTheme() {
+    document.body.classList.toggle("dark");
+    const icon = document.getElementById("theme-icon");
+    const isDark = document.body.classList.contains("dark");
+    if (isDark) {
+        icon.classList.replace("fa-moon", "fa-sun");
+        localStorage.setItem('theme', 'dark');
+    } else {
+        icon.classList.replace("fa-sun", "fa-moon");
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+let currentAudioBlob = null;
+
+async function speakText() {
+    const textInput = document.getElementById('tts-text').value;
+    const selectVoice = document.getElementById('voice-select');
+    const voiceName = selectVoice.value;
+    const langName = selectVoice.options[selectVoice.selectedIndex].getAttribute('data-lang');
+    const btn = document.getElementById('generate-btn');
+    const dlBtn = document.getElementById('download-btn');
+
+    if (!textInput.trim()) return;
+    
+    btn.disabled = true; 
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Translating & Generating...';
+    dlBtn.style.display = 'none';
+
+    try {
+        const response = await fetch(`/api/tts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: textInput, voice: voiceName, lang: langName })
+        });
+
+        if (response.ok) {
+            currentAudioBlob = await response.blob();
+            const url = URL.createObjectURL(currentAudioBlob);
+            const audio = new Audio(url);
+            audio.play();
+            dlBtn.style.display = 'flex';
+        } else {
+            const errorJson = await response.json();
+            throw new Error(errorJson.detail || "API Error");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Speech generation failed.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-play"></i> Generate Voice';
+    }
+}
+
+function downloadAudio() {
+    if (!currentAudioBlob) return;
+    const url = URL.createObjectURL(currentAudioBlob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `echomind_tts_${Date.now()}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 100);
+}
+
+let recognition = null;
+let isListening = false;
+
+function toggleSTT() {
+    const statusText = document.getElementById('stt-status');
+    const micIcon = document.getElementById('mic-icon');
+    const resultBox = document.getElementById('stt-result-text');
+    const lang = document.getElementById('stt-lang-select').value;
+
+    const accentColor = "var(--accent)";
+    const mutedColor = "var(--muted)";
+
+    if (isListening && recognition) {
+        recognition.stop();
+        isListening = false;
+        statusText.innerText = "Click to start listening";
+        micIcon.classList.remove('animate-pulse');
+        micIcon.style.color = mutedColor;
+        return;
+    }
+
+    // Check if the browser natively supports Speech Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Your browser does not support the Web Speech API. Please use Google Chrome or Microsoft Edge.");
+        return;
+    }
+
+    try {
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        // Map our simple lang codes to full BCP-47 tags
+        const langMap = { "en": "en-US", "hi": "hi-IN", "es": "es-ES", "fr": "fr-FR", "ja": "ja-JP" };
+        recognition.lang = langMap[lang] || "en-US";
+
+        recognition.onstart = () => {
+            isListening = true;
+            statusText.innerText = `I'm listening via Browser... (${recognition.lang})`;
+            micIcon.classList.add('animate-pulse');
+            micIcon.style.color = accentColor;
+        };
+
+        recognition.onerror = (e) => {
+            console.error(e.error);
+            if (e.error === 'not-allowed') {
+                alert("Microphone access is blocked by the browser.");
+            }
+        };
+
+        recognition.onend = () => {
+            // Auto-restart if it drops out unexpectedly while we explicitly wanted to listen
+            if (isListening) {
+                recognition.start();
+            } else {
+                statusText.innerText = "Click to start listening";
+                micIcon.classList.remove('animate-pulse');
+                micIcon.style.color = mutedColor;
+            }
+        };
+
+        recognition.onresult = (e) => {
+            let finalStr = '';
+            let interimStr = '';
+
+            for (let i = 0; i < e.results.length; ++i) {
+                if (e.results[i].isFinal) {
+                    finalStr += e.results[i][0].transcript;
+                } else {
+                    interimStr += e.results[i][0].transcript;
+                }
+            }
+            
+            // Only update the box with the reconstructed full string + the current active interim guess
+            if (interimStr) {
+                resultBox.value = finalStr + " *" + interimStr.trim() + "*";
+            } else {
+                resultBox.value = finalStr;
+            }
+            
+            // Auto scroll to bottom
+            resultBox.scrollTop = resultBox.scrollHeight;
+        };
+
+        recognition.start();
+
+    } catch (err) {
+        console.error("Speech Recognition Error:", err);
+        alert("An error occurred initializing the microphone.");
+    }
+}
+
+function copySTT() {
+    const rb = document.getElementById('stt-result-text');
+    navigator.clipboard.writeText(rb.value);
+    const btn = document.getElementById('copy-stt-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    setTimeout(() => btn.innerHTML = originalText, 2000);
+}
+</script>
+
+</body>
+</html>
