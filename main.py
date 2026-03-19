@@ -26,6 +26,12 @@ class TTSRequest(BaseModel):
     text: str
     voice: str
     lang: str
+    speed: str = "+0%"
+    pitch: str = "+0Hz"
+    volume: str = "+0%"
+    stability: int = 75
+    clarity: int = 88
+    style: str = ""
 
 @app.post("/api/tts")
 async def generate_tts(req: TTSRequest):
@@ -37,27 +43,40 @@ async def generate_tts(req: TTSRequest):
         print(f"Translation error: {e}")
         translated_text = req.text
 
-    # Setup Edge TTS
-    communicate = edge_tts.Communicate(translated_text, req.voice)
+    # Setup Edge TTS with parameters
+    communicate = edge_tts.Communicate(translated_text, req.voice, rate=req.speed, pitch=req.pitch, volume=req.volume)
     
     base_uuid = uuid.uuid4()
     mp3_output_path = f"temp/{base_uuid}.mp3"
     wav_output_path = f"temp/{base_uuid}.wav"
     
-    # Run the save operation (we must await it correctly or it fails without errors in some envs)
+    # Run the save operation
     await communicate.save(mp3_output_path)
 
     # Convert the MP3 to WAV
     ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-    subprocess.run([ffmpeg_exe, "-y", "-i", mp3_output_path, wav_output_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Apply "style" filters if needed (e.g., aecho for whispery/dramatic effects)
+    audio_filters = []
+    if req.style == "Whispery":
+        audio_filters = ["-af", "aecho=0.8:0.88:6:0.4"]
+    elif req.style == "Dramatic":
+        audio_filters = ["-af", "aecho=0.8:0.9:1000:0.3,highpass=f=200,lowpass=f=3000"]
+    elif req.style == "Suspenseful":
+        audio_filters = ["-af", "aecho=0.8:0.9:500:0.5"]
+
+    cmd = [ffmpeg_exe, "-y", "-i", mp3_output_path] + audio_filters + [wav_output_path]
+    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
     os.remove(mp3_output_path)
     
     # Stream the file back and then remove it
     def iterfile():
-        with open(wav_output_path, "rb") as f:
-            yield from f
-        os.remove(wav_output_path)
+        try:
+            with open(wav_output_path, "rb") as f:
+                yield from f
+        finally:
+            if os.path.exists(wav_output_path):
+                os.remove(wav_output_path)
 
     return StreamingResponse(iterfile(), media_type="audio/wav")
 
