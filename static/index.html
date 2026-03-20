@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Echo API — TTS Studio</title>
+    <title>EchoMind TTS &amp; STT</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet" />
@@ -216,19 +216,6 @@
             font-weight: 800
         }
 
-        .api-badge {
-            background: var(--tag-bg);
-            border: 1px solid var(--tag-border);
-            color: var(--accent);
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-left: 0.5rem;
-        }
-
         .about-panel {
             display: none;
             position: fixed;
@@ -407,27 +394,6 @@
 
         .toolbar-badge:hover {
             background: var(--accent-hover)
-        }
-
-        .auto-translate-badge {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            color: #16a34a;
-            padding: 0.3rem 0.7rem;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .dark .auto-translate-badge {
-            color: #4ade80;
-            background: rgba(34, 197, 94, 0.15);
-            border-color: rgba(34, 197, 94, 0.4);
         }
 
         .editor-meta {
@@ -719,26 +685,82 @@
             color: var(--accent)
         }
 
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: var(--accent);
-            color: var(--btn-text);
-            padding: 0.75rem 1.5rem;
-            border-radius: 10px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            opacity: 0;
-            transition: all 0.3s;
-            z-index: 9999;
-            pointer-events: none;
+        /* STT Panel */
+        .stt-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 3rem;
+            animation: fadeIn .5s ease-out
         }
 
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+        .tool-card {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2.5rem;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, .1);
+            transition: background-color .3s, border-color .3s
+        }
+
+        textarea,
+        select {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background-color: var(--input-bg) !important;
+            color: var(--text-primary) !important;
+            margin-bottom: 1.5rem;
+            transition: background-color .3s, color .3s, border-color .3s
+        }
+
+        .primary-btn {
+            background: var(--accent);
+            color: var(--btn-text);
+            width: 100%;
+            padding: 1.125rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            gap: .75rem;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: all .2s
+        }
+
+        .primary-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px)
+        }
+
+        .primary-btn:disabled {
+            opacity: .7;
+            transform: none;
+            cursor: default
+        }
+
+        .secondary-btn {
+            background: rgba(151, 123, 183, .05);
+            color: var(--text-primary);
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            gap: .75rem;
+            justify-content: center;
+            font-weight: 600;
+            transition: all .2s
+        }
+
+        .secondary-btn:hover {
+            background: rgba(151, 123, 183, .1);
+            border-color: var(--accent)
         }
 
         .voice-select-studio {
@@ -757,16 +779,12 @@
 
 <body>
     <div id="intro-overlay">
-        <div class="intro-logo">Echo API</div>
+        <div class="intro-logo">EchoMind</div>
     </div>
-    <div class="toast" id="toast"></div>
     <div class="app-container">
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="header">
-                <div class="flex items-center gap-2">
-                    <div class="logo-text">EchoMind</div>
-                    <span class="api-badge">API Edition</span>
-                </div>
+                <div class="logo-text">EchoMind</div>
                 <div class="flex items-center gap-4">
                     <button class="about-btn" onclick="toggleAboutPanel()">About</button>
                     <button class="login-header-btn" onclick="openModal('login-modal')"
@@ -784,17 +802,19 @@
                             <div style="width:1px;height:20px;background:var(--border);margin:0 .25rem"></div>
                             <button class="toolbar-badge" onclick="enhanceText()"><i class="fas fa-wand-magic-sparkles"
                                     style="font-size:.6rem"></i> Enhance Text</button>
-                            <div class="auto-translate-badge">
-                                <i class="fas fa-language" style="font-size:.6rem"></i> Auto-Translate ON
-                            </div>
+                            <button class="toolbar-badge" onclick="translateText()"
+                                style="background:var(--tag-bg);color:var(--text-primary);"><i class="fas fa-language"
+                                    style="font-size:.6rem"></i> Translate</button>
+                            <div style="flex:1"></div>
+                            <span class="toolbar-badge" style="background:var(--accent);cursor:default;font-size:.6rem"><i class="fas fa-bolt" style="font-size:.55rem"></i> API Edition</span>
+                            <span class="toolbar-badge" style="background:var(--tag-bg);color:var(--accent);cursor:default;font-size:.6rem"><i class="fas fa-globe" style="font-size:.55rem"></i> Auto-Translate ON</span>
                         </div>
                         <div class="editor-meta">
                             <span><i class="far fa-clock"></i> Auto saved</span>
                             <span id="char-count">0 characters</span>
-                            <span style="margin-left:auto;font-style:italic;">Translation happens automatically on Generate</span>
                         </div>
                         <textarea id="tts-text" class="editor-textarea"
-                            placeholder="Type in any language or English — the server will auto-translate to the selected voice's language on Generate..."
+                            placeholder="Start typing or paste your text here...&#10;&#10;Your words will be transformed into natural speech..."
                             oninput="updateCharCount()"></textarea>
                         <div class="playback-bar">
                             <button class="play-btn" id="play-pause-btn" onclick="playPauseAudio()"><i
@@ -802,7 +822,7 @@
                             <div class="waveform" id="waveform"></div>
                             <span class="playback-time" id="playback-time">0:00 / 0:00</span>
                             <button class="generate-btn-bar" id="generate-btn" onclick="speakText()"><i
-                                    class="fas fa-sparkles"></i> Generate &amp; Translate</button>
+                                    class="fas fa-sparkles"></i> Generate Voice</button>
                             <button class="dl-btn-bar" id="download-btn" onclick="downloadAudio()" style="display:none"
                                 title="Download .wav"><i class="fas fa-download"></i></button>
                         </div>
@@ -826,10 +846,10 @@
                                         data-desc="English US · Male">Guy (English US - Male)</option>
                                 </optgroup>
                                 <optgroup label="English (India)">
-                                    <option value="en-IN-NeerjaNeural" data-lang="en" data-initial="N"
+                                    <option value="en-IN-NeerjaNeural" data-lang="en-in" data-initial="N"
                                         data-name="Neerja" data-desc="English India · Female">Neerja (English India -
                                         Female)</option>
-                                    <option value="en-IN-PrabhatNeural" data-lang="en" data-initial="P"
+                                    <option value="en-IN-PrabhatNeural" data-lang="en-in" data-initial="P"
                                         data-name="Prabhat" data-desc="English India · Male">Prabhat (English India -
                                         Male)</option>
                                 </optgroup>
@@ -861,10 +881,10 @@
                                         data-name="Manohar" data-desc="Marathi · Male">Manohar (Marathi - Male)</option>
                                 </optgroup>
                                 <optgroup label="Sanskrit">
+                                    <option value="gTTS-Sanskrit" data-lang="sa" data-initial="P" data-name="Prajna"
+                                        data-desc="Sanskrit · Female">Prajna (Sanskrit - Female)</option>
                                     <option value="hi-IN-MadhurNeural" data-lang="sa" data-initial="V" data-name="Ved"
                                         data-desc="Sanskrit · Male">Ved (Sanskrit - Male)</option>
-                                    <option value="hi-IN-SwaraNeural" data-lang="sa" data-initial="P" data-name="Prajna"
-                                        data-desc="Sanskrit · Female">Prajna (Sanskrit - Female)</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -901,8 +921,71 @@
                             </div>
                         </div>
                         <div class="pro-tip-box">
-                            <div class="tip-header"><i class="fas fa-bolt"></i> Echo API</div>
-                            <div class="tip-text">This edition auto-translates your text server-side using Google Translate before generating speech — no manual translate step needed!</div>
+                            <div class="tip-header"><i class="fas fa-lightbulb"></i> Pro Tip</div>
+                            <div class="tip-text">Use natural breaks (...) to add brief pauses or commas for natural
+                                breathing points in the AI performance.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STT PANEL -->
+                <div class="stt-container" id="stt-panel" style="display:none">
+                    <div class="tool-card">
+                        <h1 class="text-3xl font-bold mb-8">Speech to Text</h1>
+                        <label class="block text-xs font-bold mb-2 uppercase tracking-widest text-[#75797D]">Language
+                            Recognition</label>
+                        <select id="stt-lang-select">
+                            <option value="en">English (US)</option>
+                            <option value="en-in">English (India)</option>
+                            <option value="hi">Hindi (हिन्दी)</option>
+                            <option value="gu">Gujarati (ગુજરાતી)</option>
+                            <option value="te">Telugu (తెలుగు)</option>
+                            <option value="mr">Marathi (मराठी)</option>
+                            <option value="sa">Sanskrit (संस्कृतम्)</option>
+                        </select>
+                        <div class="border-2 border-dashed rounded-2xl p-12 text-center mb-6 cursor-pointer"
+                            id="mic-trigger" onclick="toggleSTT()" style="border-color:var(--border)">
+                            <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto shadow-sm mb-4"
+                                style="background:var(--input-bg);border:1px solid var(--border)">
+                                <i class="fas fa-microphone text-2xl" id="mic-icon" style="color:var(--muted)"></i>
+                            </div>
+                            <p class="text-sm font-semibold" id="stt-status" style="color:var(--muted)">Click to start
+                                listening</p>
+                        </div>
+                        <label class="block text-xs font-bold mb-2 uppercase tracking-widest text-[#75797D]">Live
+                            Transcript</label>
+                        <textarea id="stt-result-text" placeholder="Your voice will appear here..." readonly
+                            rows="8"></textarea>
+                        <div class="flex gap-3 mb-4">
+                            <button class="secondary-btn" id="copy-stt-btn" onclick="copySTT()"><i
+                                    class="far fa-copy"></i> Copy to Clipboard</button>
+                            <button class="secondary-btn" onclick="clearSTT()" style="border-color:var(--border)"><i
+                                    class="fas fa-eraser"></i> Clear Transcript</button>
+                        </div>
+                        <div style="border-top:1px solid var(--border);padding-top:1.25rem;margin-top:.5rem">
+                            <label class="block text-xs font-bold mb-2 uppercase tracking-widest text-[#75797D]">Translate Transcript To</label>
+                            <div class="flex gap-3">
+                                <select id="stt-translate-lang" style="flex:1;margin-bottom:0">
+                                    <option value="en">English</option>
+                                    <option value="hi">Hindi (हिन्दी)</option>
+                                    <option value="gu">Gujarati (ગુજરાતી)</option>
+                                    <option value="te">Telugu (తెలుగు)</option>
+                                    <option value="mr">Marathi (मराठी)</option>
+                                    <option value="sa">Sanskrit (संस्कृतम्)</option>
+                                    <option value="es">Spanish (Español)</option>
+                                    <option value="fr">French (Français)</option>
+                                    <option value="de">German (Deutsch)</option>
+                                    <option value="ja">Japanese (日本語)</option>
+                                    <option value="ko">Korean (한국어)</option>
+                                    <option value="zh-CN">Chinese (中文)</option>
+                                    <option value="ar">Arabic (العربية)</option>
+                                    <option value="pt">Portuguese (Português)</option>
+                                    <option value="ru">Russian (Русский)</option>
+                                </select>
+                                <button class="primary-btn" onclick="translateSTT()" style="width:auto;padding:.75rem 1.5rem;white-space:nowrap" id="stt-translate-btn"><i class="fas fa-language"></i> Translate</button>
+                            </div>
+                            <textarea id="stt-translated-text" placeholder="Translated text will appear here..." readonly rows="5" style="margin-top:1rem"></textarea>
+                            <button class="secondary-btn" onclick="copyTranslatedSTT()" style="margin-top:.5rem"><i class="far fa-copy"></i> Copy Translation</button>
                         </div>
                     </div>
                 </div>
@@ -910,10 +993,12 @@
             </div>
         </div>
 
-        <!-- Sidebar (TTS ONLY) -->
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="side-nav-btn active" id="btn-tts"><i
+            <div class="side-nav-btn active" id="btn-tts" onclick="switchTab('tts')"><i
                     class="fas fa-keyboard text-xl"></i><span class="tooltip">Text to Speech</span></div>
+            <div class="side-nav-btn" id="btn-stt" onclick="switchTab('stt')"><i
+                    class="fas fa-microphone text-xl"></i><span class="tooltip">Speech to Text</span></div>
             <div class="mt-auto flex flex-col gap-4 items-center">
                 <div class="side-nav-btn" id="btn-theme" onclick="toggleTheme()"><i class="fas fa-moon text-xl"
                         id="theme-icon"></i><span class="tooltip">Toggle Theme</span></div>
@@ -929,7 +1014,10 @@
         <h2 class="text-4xl font-bold mb-6" style="color:var(--text-primary);letter-spacing:-.02em">Meet the Minds</h2>
         <p class="text-xl mb-8" style="color:var(--text-secondary)">Developed by: <strong
                 style="color:var(--text-primary);font-weight:700">Rishit K, Atharva K, Naveen and Suyash P</strong></p>
-        <p class="text-[1.1rem] leading-relaxed" style="color:var(--text-secondary)">Echo API is the cloud-native edition — fully API-driven TTS with automatic server-side translation using Google Translate. Lightweight, fast, and deployment-ready.</p>
+        <p class="text-[1.1rem] leading-relaxed" style="color:var(--text-secondary)">Our goal is to make voice
+            technology easy and accessible. With accurate Speech-to-Text conversion and natural-sounding Text-to-Speech,
+            we've built a platform that helps students, creators, and everyday users interact with EchoMind more
+            smoothly.</p>
     </div>
 
     <!-- Login Modal -->
@@ -983,15 +1071,17 @@
             initWaveform();
         });
 
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
-
         function openModal(id) { document.getElementById(id).style.display = "flex" }
         function closeModal(id) { document.getElementById(id).style.display = "none" }
         function toggleAboutPanel() { const p = document.getElementById('about-panel'); p.style.display = (p.style.display === "block") ? "none" : "block" }
+
+        function switchTab(tab) {
+            const isTTS = tab === "tts";
+            document.getElementById("tts-panel").style.display = isTTS ? "flex" : "none";
+            document.getElementById("stt-panel").style.display = isTTS ? "none" : "block";
+            document.getElementById("btn-tts").classList.toggle("active", isTTS);
+            document.getElementById("btn-stt").classList.toggle("active", !isTTS);
+        }
 
         function toggleTheme() {
             document.body.classList.toggle("dark");
@@ -1045,26 +1135,28 @@
 
         // Style tag modifiers
         const STYLE_MODS = {
-            'Whispery': { speed: 80, pitch: 25 },
-            'Dramatic': { speed: 80, pitch: 75 },
-            'Suspenseful': { speed: 85, pitch: 60 },
-            'Noir': { speed: 75, pitch: 25 },
-            'Cheerful': { speed: 120, pitch: 75 },
-            'Calm': { speed: 90, pitch: 50 }
+            'Whispery': { speed: 80, pitch: 25, volume: '-60%' },
+            'Dramatic': { speed: 80, pitch: 75, volume: '+0%' },
+            'Suspenseful': { speed: 85, pitch: 60, volume: '+0%' },
+            'Noir': { speed: 75, pitch: 25, volume: '-10%' },
+            'Cheerful': { speed: 120, pitch: 75, volume: '+0%' },
+            'Calm': { speed: 90, pitch: 50, volume: '-5%' }
         };
 
         function toggleStyleTag(btn) {
-            const isActive = btn.classList.contains('active');
             document.querySelectorAll('.style-tag').forEach(b => b.classList.remove('active'));
-            if (!isActive) {
-                btn.classList.add('active');
-                const mod = STYLE_MODS[btn.textContent.trim()];
-                if (mod) {
-                    const speedSlider = document.getElementById('speed-slider');
-                    speedSlider.value = mod.speed; speedSlider.dispatchEvent(new Event('input'));
-                    const pitchSlider = document.getElementById('pitch-slider');
-                    pitchSlider.value = mod.pitch; pitchSlider.dispatchEvent(new Event('input'));
-                }
+            btn.classList.add('active');
+
+            // 11labs behavior: clicking a preset updates the sliders visually
+            const mod = STYLE_MODS[btn.textContent.trim()];
+            if (mod) {
+                const speedSlider = document.getElementById('speed-slider');
+                speedSlider.value = mod.speed;
+                speedSlider.dispatchEvent(new Event('input'));
+
+                const pitchSlider = document.getElementById('pitch-slider');
+                pitchSlider.value = mod.pitch;
+                pitchSlider.dispatchEvent(new Event('input'));
             }
         }
 
@@ -1075,26 +1167,27 @@
             const langName = selectVoice.options[selectVoice.selectedIndex].getAttribute('data-lang');
             const btn = document.getElementById('generate-btn');
             const dlBtn = document.getElementById('download-btn');
-            if (!textInput.trim()) { showToast('Please enter some text first.'); return; }
+            if (!textInput.trim()) return;
 
+            // Read slider values directly so user can tweak even with a style active
             const speedVal = parseInt(document.getElementById('speed-slider').value) || 100;
             const pitchVal = parseInt(document.getElementById('pitch-slider').value) || 50;
+
             const speedStr = (speedVal - 100 >= 0 ? '+' : '') + (speedVal - 100) + '%';
             const pitchHz = Math.round((pitchVal - 50) / 50 * 20); // Map 0-100 to -20Hz to +20Hz
             const pitchStr = (pitchHz >= 0 ? '+' : '') + pitchHz + 'Hz';
 
+            // Still read active tag for backend audio filters (aecho, etc.) and volume
             const activeTag = document.querySelector('.style-tag.active');
             const styleName = activeTag ? activeTag.textContent.trim() : '';
+            const volumeStr = (activeTag && STYLE_MODS[styleName]) ? STYLE_MODS[styleName].volume : '+0%';
 
             const stability = parseInt(document.getElementById('stability-slider').value) || 75;
             const clarity = parseInt(document.getElementById('clarity-slider').value) || 88;
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
             dlBtn.style.display = 'none';
             try {
-                const response = await fetch('/api/tts', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: textInput, voice: voiceName, lang: langName, speed: speedStr, pitch: pitchStr, stability, clarity, style: styleName })
-                });
+                const response = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: textInput, voice: voiceName, lang: langName, speed: speedStr, pitch: pitchStr, volume: volumeStr, stability, clarity, style: styleName }) });
                 if (response.ok) {
                     currentAudioBlob = await response.blob();
                     const url = URL.createObjectURL(currentAudioBlob);
@@ -1114,8 +1207,8 @@
                         clearInterval(waveInterval); animateWaveform(false);
                     };
                 } else { const ej = await response.json(); throw new Error(ej.detail || "API Error") }
-            } catch (err) { console.error(err); showToast("Speech generation failed: " + err.message) }
-            finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sparkles"></i> Generate &amp; Translate' }
+            } catch (err) { console.error(err); alert("Speech generation failed.") }
+            finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sparkles"></i> Generate Voice' }
         }
 
         function enhanceText() {
@@ -1123,16 +1216,17 @@
             if (!ta.value.trim()) return;
             const sel = document.getElementById('voice-select');
             const lang = sel.options[sel.selectedIndex].getAttribute('data-lang');
+            // Non-Latin scripts: just trim whitespace
             const nonLatin = ['hi', 'gu', 'te', 'mr', 'sa', 'ja'];
             let text = ta.value.replace(/\s+/g, ' ').trim();
             if (!nonLatin.includes(lang)) {
+                // English / Latin: capitalize sentences, ensure punctuation
                 text = text.replace(/(^|[.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
                 text = text.charAt(0).toUpperCase() + text.slice(1);
                 if (!/[.!?]$/.test(text)) text += '.';
             }
             ta.value = text;
             updateCharCount();
-            showToast('Text enhanced!');
         }
 
         function formatText(type) {
@@ -1152,14 +1246,128 @@
             updateCharCount();
         }
 
+        async function translateText() {
+            const ta = document.getElementById('tts-text');
+            if (!ta.value.trim()) return;
+            const sel = document.getElementById('voice-select');
+            // Use the voice's language for translation target
+            const lang = sel.options[sel.selectedIndex].getAttribute('data-lang');
+            const voiceName = sel.options[sel.selectedIndex].getAttribute('data-name') || 'Voice';
+            const btn = document.querySelector('.toolbar-badge:last-of-type');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:.6rem"></i> Translating...';
+            try {
+                const encoded = encodeURIComponent(ta.value);
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encoded}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                const translated = data[0].map(c => c[0]).join('');
+                ta.value = translated;
+                updateCharCount();
+            } catch (e) { alert('Translation failed. Check your connection.'); console.error(e); }
+            finally { btn.innerHTML = origHtml; }
+        }
+
         function formatTime(s) { if (isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return m + ':' + (sec < 10 ? '0' : '') + sec }
 
         function downloadAudio() {
             if (!currentAudioBlob) return;
             const url = URL.createObjectURL(currentAudioBlob); const a = document.createElement('a');
-            a.style.display = 'none'; a.href = url; a.download = 'echo_api_tts_' + Date.now() + '.wav';
+            a.style.display = 'none'; a.href = url; a.download = 'echomind_tts_' + Date.now() + '.wav';
             document.body.appendChild(a); a.click();
             setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 100);
+        }
+
+        // STT — Browser Web Speech API (no server needed)
+        const LANG_MAP = { 'en': 'en-US', 'en-in': 'en-IN', 'hi': 'hi-IN', 'gu': 'gu-IN', 'te': 'te-IN', 'mr': 'mr-IN', 'sa': 'sa-IN' };
+        let recognition = null; let isListening = false;
+
+        function toggleSTT() {
+            const statusText = document.getElementById('stt-status'); const micIcon = document.getElementById('mic-icon');
+            const resultBox = document.getElementById('stt-result-text'); const lang = document.getElementById('stt-lang-select').value;
+
+            if (isListening && recognition) {
+                recognition.stop(); isListening = false;
+                statusText.innerText = "Click to start listening"; micIcon.classList.remove('animate-pulse'); micIcon.style.color = "var(--muted)";
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { alert('Your browser does not support Speech Recognition. Use Chrome or Edge.'); return; }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = LANG_MAP[lang] || 'en-US';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            let finalizedText = resultBox.value;
+
+            recognition.onstart = () => {
+                isListening = true;
+                statusText.innerText = `I'm listening... (${lang.toUpperCase()})`;
+                micIcon.classList.add('animate-pulse'); micIcon.style.color = "var(--accent)";
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalizedText += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                resultBox.value = finalizedText + interimTranscript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error !== 'no-speech') {
+                    statusText.innerText = `Error: ${event.error}`;
+                }
+            };
+
+            recognition.onend = () => {
+                if (isListening) { recognition.start(); } // auto-restart
+                else { statusText.innerText = "Click to start listening"; micIcon.classList.remove('animate-pulse'); micIcon.style.color = "var(--muted)"; }
+            };
+
+            recognition.start();
+        }
+
+        function copySTT() {
+            const rb = document.getElementById('stt-result-text'); navigator.clipboard.writeText(rb.value);
+            const btn = document.getElementById('copy-stt-btn'); const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!'; setTimeout(() => btn.innerHTML = orig, 2000);
+        }
+
+        function clearSTT() {
+            document.getElementById('stt-result-text').value = '';
+            document.getElementById('stt-translated-text').value = '';
+        }
+
+        async function translateSTT() {
+            const text = document.getElementById('stt-result-text').value;
+            if (!text.trim()) { alert('No transcript to translate.'); return; }
+            const targetLang = document.getElementById('stt-translate-lang').value;
+            const btn = document.getElementById('stt-translate-btn');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Translating...'; btn.disabled = true;
+            try {
+                const encoded = encodeURIComponent(text);
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encoded}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                const translated = data[0].map(c => c[0]).join('');
+                document.getElementById('stt-translated-text').value = translated;
+            } catch (e) { alert('Translation failed. Check your connection.'); console.error(e); }
+            finally { btn.innerHTML = origHtml; btn.disabled = false; }
+        }
+
+        function copyTranslatedSTT() {
+            const rb = document.getElementById('stt-translated-text');
+            if (!rb.value.trim()) return;
+            navigator.clipboard.writeText(rb.value);
         }
     </script>
 </body>
